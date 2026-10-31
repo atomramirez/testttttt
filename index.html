@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="xinhelper - เครื่องมือคำนวณมูลค่าสิ่งของและตารางกิจกรรมพร้อมระบบแจ้งเตือน รองรับโหมดมืดและโหมดสว่าง">
+  <title>xinhelper — Helper & Timer Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- กล่องแจ้งเตือน Toast บนหน้าจอ -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- ===== ส่วนหัว (Header) ===== -->
+  <header class="site-header">
+    <div class="header-content">
+      <div class="header-main-row">
+        <div class="header-text-group">
+          <div class="brand-tag">ITEM VALUATION & EVENTS</div>
+          <h1 class="site-title">xinhelper</h1>
+          <p class="site-subtitle">ระบบคำนวณราคากลางไอเทม & ตารางเวลากิจกรรม</p>
+        </div>
+
+        <!-- ปุ่มปรับเปลี่ยนธีม มืด / สว่าง (Theme Toggle) -->
+        <button class="theme-toggle-btn" id="btnThemeToggle" title="สลับโหมดมืด / สว่าง" aria-label="Toggle Theme">
+          <span class="theme-toggle-indicator">
+            <span class="theme-icon" id="themeIcon">🌙</span>
+          </span>
+          <span class="theme-text" id="themeText">โหมดมืด</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== เมนูแท็บหลัก (2 แท็บ) ===== -->
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="calc" id="tabCalc">
+      <svg class="tab-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg>
+      <span>คำนวณมูลค่าของ</span>
+    </button>
+    <button class="tab-btn" data-tab="event" id="tabEvent">
+      <svg class="tab-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <span>เวลากิจกรรม & แจ้งเตือน</span>
+      <span class="tab-badge" id="notifBadge">เปิดเสียง</span>
+    </button>
+    <button class="tab-btn" data-tab="ai" id="tabAI">
+      <svg class="tab-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v1a1 1 0 0 0 1 1h1a4 4 0 0 1 0 8h-1a1 1 0 0 0-1 1v1a4 4 0 0 1-8 0v-1a1 1 0 0 0-1-1H6a4 4 0 0 1 0-8h1a1 1 0 0 0 1-1V6a4 4 0 0 1 4-4z"></path><circle cx="12" cy="12" r="2"></circle></svg>
+      <span>AI วิเคราะห์ของ</span>
+      <span class="tab-badge ai-badge">✨ AI</span>
+    </button>
+  </nav>
+
+  <!-- ===== นาฬิกาและสถานะด้านบน ===== -->
+  <div class="clock-bar">
+    <div class="clock-item">
+      <span class="clock-dot"></span>
+      <span class="clock-label">เวลาไทย (Asia/Bangkok):</span>
+      <span class="clock-time" id="currentClock">--:--:--</span>
+    </div>
+    <div class="clock-item" id="headerNextSnippet">
+      <span class="snippet-label">กิจกรรมถัดไป:</span>
+      <span class="snippet-value" id="headerNextText">กำลังโหลด...</span>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- เมนู 1: คำนวณมูลค่าสิ่งของ (ระบบรายการแบบสไตล์ค่าปรับ) -->
+  <!-- ============================================ -->
+  <section class="tab-content active" id="contentCalc">
+    <div class="section-header">
+      <div class="section-badge">STANDARD PRICE CALCULATOR</div>
+      <h2>คำนวณมูลค่าสิ่งของ (Item Valuation)</h2>
+      <p>เลือกไอเทมเพื่อระบุจำนวนและคำนวณมูลค่ารวม XC แบบเรียลไทม์</p>
+    </div>
+
+    <!-- แผงสรุปมูลค่ารวมทั้งหมด (Summary Panel) -->
+    <div class="calc-master-summary">
+      <div class="summary-left">
+        <div class="sum-stat-item">
+          <span class="sum-stat-label">รายการที่เลือก</span>
+          <strong class="sum-stat-val" id="totalKindsCount">0 รายการ</strong>
+        </div>
+        <div class="sum-stat-item">
+          <span class="sum-stat-label">จำนวนชิ้นรวม</span>
+          <strong class="sum-stat-val" id="totalPiecesCount">0 ชิ้น</strong>
+        </div>
+      </div>
+
+      <div class="summary-center">
+        <span class="grand-label">มูลค่ารวมทั้งหมด</span>
+        <div class="grand-value" id="grandTotal">0 XC</div>
+      </div>
+
+      <div class="summary-right">
+        <button class="btn btn-copy" id="btnCopySummary" title="คัดลอกรายการสรุปราคาไปส่งในแชท">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>คัดลอกสรุป</span>
+        </button>
+        <button class="btn btn-clear-all" id="btnClearAll" title="ล้างจำนวนสิ่งของทั้งหมด">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span>ล้างทั้งหมด</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- กล่องเลือกรายการสิ่งของ (ดีไซน์ตามแบบระบบค่าปรับ / Trading Ledger) -->
+    <div class="item-selector-card">
+      
+      <!-- ช่องค้นหาสิ่งของแบบเรียลไทม์ -->
+      <div class="item-search-bar">
+        <svg class="search-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input 
+          type="text" 
+          class="item-search-input" 
+          id="itemSearchInput" 
+          placeholder="ค้นหาไอเทม เช่น Diamond, Vest, แคปแดง, ปูน, ทอง, Lockpick..."
+          autocomplete="off"
+        >
+        <button class="search-clear-btn" id="searchClearBtn" title="ล้างการค้นหา">✕</button>
+      </div>
+
+      <!-- แถบหมวดหมู่ Subtabs: ทั้งหมด | แร่ธาตุ | ของทั่วไป | อุปกรณ์ & อาวุธ | ยา & แคปซูล | ที่เลือกแล้ว -->
+      <div class="item-subtabs-nav" id="itemSubtabsNav">
+        <button class="item-subtab-btn active" data-cat="all">ทั้งหมด</button>
+        <button class="item-subtab-btn" data-cat="mineral">แร่ธาตุ</button>
+        <button class="item-subtab-btn" data-cat="general">ของทั่วไป & วัตถุดิบ</button>
+        <button class="item-subtab-btn" data-cat="equipment">อุปกรณ์ & อาวุธ</button>
+        <button class="item-subtab-btn" data-cat="capsule">ยา & แคปซูล</button>
+        <button class="item-subtab-btn tab-btn-selected" data-cat="selected" id="tabSelectedBtn">
+          <span>ที่เลือกแล้ว</span>
+          <span class="tab-count-badge" id="tabSelectedCount">0</span>
+        </button>
+      </div>
+
+      <!-- หัวคอลัมน์รายการสิ่งของ (Trading Ledger Columns) -->
+      <div class="item-list-header">
+        <span class="col-head-title">ไอเทม / รายการ</span>
+        <div class="col-head-actions">
+          <span class="col-head-unit">ราคาต่อชิ้น</span>
+          <span class="col-head-counter">ระบุจำนวน</span>
+        </div>
+      </div>
+
+      <!-- รายการสิ่งของ (Scrollable List) -->
+      <div class="item-list-container" id="itemListContainer">
+        <!-- สร้างด้วย JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- เมนู 2: คำนวณเวลาเกิดกิจกรรม & แจ้งเตือน     -->
+  <!-- ============================================ -->
+  <section class="tab-content" id="contentEvent">
+
+    <!-- แผงควบคุมระบบแจ้งเตือน (Notification Master Bar) -->
+    <div class="notification-bar" id="notificationBar">
+      <div class="notif-header-info">
+        <div class="notif-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </div>
+        <div>
+          <div class="notif-title">ระบบแจ้งเตือนกิจกรรม (Alert Center)</div>
+          <div class="notif-desc">แจ้งเตือนด้วยเสียงและป๊อปอัปเมื่อถึงเวลากิจกรรม</div>
+        </div>
+      </div>
+
+      <div class="notif-controls">
+        <div class="notif-control-group">
+          <label for="notifAdvance" class="notif-label">เตือนล่วงหน้า:</label>
+          <select id="notifAdvance" class="notif-select">
+            <option value="0">ตรงเวลาเป๊ะ</option>
+            <option value="60" selected>1 นาที</option>
+            <option value="180">3 นาที</option>
+            <option value="300">5 นาที</option>
+            <option value="600">10 นาที</option>
+          </select>
+        </div>
+
+        <button class="btn-notif-action active" id="btnNotifToggle" title="เปิด/ปิดเสียงแจ้งเตือน">
+          <span id="notifToggleText">เสียง: เปิด</span>
+        </button>
+
+        <button class="btn-notif-action" id="btnNotifTest" title="ทดสอบเสียงแจ้งเตือน">
+          ทดสอบเสียง
+        </button> 
+      </div>
+    </div>
+
+    <!-- กิจกรรมถัดไปแบบการ์ดไฮไลต์ใหญ่ -->
+    <div class="next-event-highlight" id="nextEventBox">
+      <div class="next-event-deco-tag">NEXT UPCOMING EVENT</div>
+      <div class="next-event-header">
+        <span class="next-event-label">กิจกรรมถัดไปที่จะถึง:</span>
+        <span class="next-event-time" id="nextEventTime">--:--</span>
+      </div>
+      <div class="next-event-name" id="nextEventName">--</div>
+      <div class="next-event-countdown-wrap">
+        <span class="countdown-title">นับถอยหลัง:</span>
+        <div class="next-event-countdown" id="nextEventCountdown">--:--:--</div>
+      </div>
+    </div>
+
+    <!-- ส่วน A: กิจกรรมแบบวนซ้ำ -->
+    <div class="section-header">
+      <div class="section-badge">RECURRING TIMERS</div>
+      <h2>กิจกรรมแบบวนซ้ำ (Recurring Events)</h2>
+      <p>กดปุ่ม <strong>"เวลาปัจจุบัน"</strong> หรือพิมพ์เวลาที่เพิ่งเกิด แล้วกดยืนยัน</p>
+    </div>
+
+    <div class="recurring-events-grid" id="recurringEvents">
+      <!-- สร้างด้วย JavaScript -->
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ส่วน B: กิจกรรมตามตารางเวลาคงที่ -->
+    <div class="section-header">
+      <div class="section-badge">SCHEDULE OVERVIEW</div>
+      <h2>ตารางกิจกรรมประจำวัน (Daily Schedule)</h2>
+      <p>อิงเวลาประเทศไทย (Asia/Bangkok) · นับถอยหลังแต่ละกิจกรรมและไฮไลต์รอบถัดไปอัตโนมัติ</p>
+    </div>
+
+    <!-- การ์ดนับถอยหลังกิจกรรมประจำวัน (Scheduled Events Cards) -->
+    <div class="scheduled-events-grid" id="scheduledEventsGrid">
+      <!-- สร้างด้วย JavaScript -->
+    </div>
+
+    <!-- ตัวกรองค้นหากิจกรรม -->
+    <div class="filter-bar">
+      <div class="filter-input-wrap">
+        <svg class="filter-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <select id="eventFilter" class="filter-select">
+          <option value="all">— แสดงกิจกรรมทั้งหมด —</option>
+        </select>
+      </div>
+      <div class="filtered-next" id="filteredNext"></div>
+    </div>
+
+    <!-- ตารางกิจกรรมทั้งวัน -->
+    <div class="schedule-table-wrapper">
+      <div class="schedule-table" id="scheduleTable">
+        <!-- สร้างด้วย JavaScript -->
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================ -->
+  <!-- เมนู 3: AI วิเคราะห์คลังสินค้า (AI Scanner)    -->
+  <!-- ============================================ -->
+  <section class="tab-content" id="contentAI">
+
+    <div class="section-header">
+      <div class="section-badge ai-section-badge">✨ AI ITEM SCANNER</div>
+      <h2>AI วิเคราะห์คลังสินค้า</h2>
+      <p>ส่งรูปภาพหรือพิมพ์ข้อความ แล้ว AI จะวิเคราะห์ชื่อไอเทม + จำนวน แล้วคำนวณราคากลางให้อัตโนมัติ</p>
+    </div>
+
+    <!-- การตั้งค่า API Key -->
+    <div class="ai-settings-card" id="aiSettingsCard">
+      <div class="ai-settings-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+        <span>ตั้งค่า Gemini API Key</span>
+        <button class="ai-settings-toggle" id="btnToggleApiSettings" title="แสดง/ซ่อน">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <div class="ai-settings-body" id="aiSettingsBody">
+        <p class="ai-settings-desc">สมัคร API Key ฟรีจาก <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> แล้วนำมาวางด้านล่าง (เก็บไว้ในเบราว์เซอร์เท่านั้น ไม่ส่งไปที่อื่น)</p>
+        <div class="ai-key-input-row">
+          <input type="password" class="ai-key-input" id="aiApiKeyInput" placeholder="วาง API Key ที่นี่ (AIzaSy...)" autocomplete="off" spellcheck="false">
+          <button class="btn ai-btn-save-key" id="btnSaveApiKey">บันทึก</button>
+        </div>
+        <div class="ai-key-status" id="aiKeyStatus"></div>
+
+        <!-- ตัวเลือกและสลับโมเดล AI -->
+        <div class="ai-model-row" id="aiModelRow">
+          <div class="ai-model-label-wrap">
+            <label for="aiModelSelect" class="ai-model-label">🤖 โมเดลที่ใช้งาน:</label>
+            <span class="ai-model-badge" id="aiModelBadge">Auto (สลับอัตโนมัติ)</span>
+          </div>
+          <div class="ai-model-controls">
+            <select id="aiModelSelect" class="ai-model-select">
+              <option value="auto">⚡ อัตโนมัติ (แนะนำ: เลือกรุ่นที่เสถียรที่สุดและสลับให้อัตโนมัติ)</option>
+              <option value="gemini-flash-lite-latest">Gemini Flash Lite (แนะนำ: เสถียรสูงสุด ไม่ติด High Demand)</option>
+              <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (เสถียร &amp; รวดเร็ว)</option>
+              <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (รุ่นใหม่)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </select>
+            <button class="btn ai-btn-check-models" id="btnCheckModels" title="ตรวจสอบรายชื่อโมเดลทั้งหมดที่ API Key รองรับ">🔄 ตรวจสอบโมเดล</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- พื้นที่แชทกับ AI -->
+    <div class="ai-chat-area">
+
+      <!-- ผลลัพธ์การแชท (Conversation History) -->
+      <div class="ai-chat-messages" id="aiChatMessages">
+        <div class="ai-welcome-msg">
+          <div class="ai-welcome-icon">✨</div>
+          <div class="ai-welcome-title">พร้อมวิเคราะห์คลังสินค้าแล้ว!</div>
+          <div class="ai-welcome-desc">ส่งรูปภาพคลังไอเทม (กด Ctrl+V วางรูป หรือกดอัปโหลด) หรือพิมพ์รายการของที่มี แล้ว AI จะคำนวณราคากลางให้</div>
+          <div class="ai-welcome-tips">
+            <div class="ai-tip">📸 วางรูปภาพ (Ctrl+V) หรือลากวางรูปในกล่องด้านล่าง</div>
+            <div class="ai-tip">⌨️ พิมพ์ข้อความ เช่น "Diamond Box 60 กล่อง, Jade Shard 3 ชิ้น"</div>
+            <div class="ai-tip">🔄 กดปุ่ม "นำเข้าตารางคำนวณ" เพื่อกรอกจำนวนอัตโนมัติ</div>
+            <button class="ai-tip ai-tip-btn" id="btnTrySample" title="คลิกเพื่อทดสอบระบบ">
+              <span>💡</span>
+              <span><strong>คลิกเพื่อลองตัวอย่าง:</strong> "Diamond Box 60 กล่อง, Jade Shard 3 ชิ้น, Normal Screw 9 ชิ้น"</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- พื้นที่แสดงรูปภาพที่แนบ (Preview) -->
+      <div class="ai-attached-images" id="aiAttachedImages" style="display:none;">
+        <!-- สร้างด้วย JavaScript -->
+      </div>
+
+      <!-- กล่องพิมพ์ข้อความ + อัปโหลดรูป -->
+      <div class="ai-input-bar" id="aiInputBar">
+        <div class="ai-input-actions">
+          <label class="ai-btn-upload" title="อัปโหลดรูปภาพ" for="aiImageUpload">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <input type="file" id="aiImageUpload" accept="image/*" multiple style="display:none;">
+          </label>
+        </div>
+        <textarea class="ai-text-input" id="aiTextInput" placeholder="พิมพ์ข้อความหรือวางรูปที่นี่ (Ctrl+V)..." rows="1"></textarea>
+        <button class="ai-btn-send" id="btnAISend" title="ส่งให้ AI วิเคราะห์">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===== ส่วนท้าย ===== -->
+  <footer class="site-footer">
+    <div class="footer-deco"></div>
+    <p>xinhelper · Standard Price Calculator & Event Master</p>
+    <p class="footer-sub">ระบบช่วยคำนวณและแจ้งเตือนกิจกรรม</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
